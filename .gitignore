@@ -1,12 +1,19 @@
+# Maven related
 pom.xml
 pom.xml.asc
+
+# Binaries
 *jar
 /lib/
 /classes/
 /target/
 /checkouts/
+
+# Leiningen project files
+.lein-env
 .lein-deps-sum
 .lein-repl-history
 .lein-plugins/
 .lein-failures
 .nrepl-port
+profiles.clj
