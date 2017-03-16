@@ -4,4 +4,4 @@ jdk:
   - oraclejdk8
 script:
   - lein test
-  - ring uberwar
+  - lein ring uberwar
