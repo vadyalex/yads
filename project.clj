@@ -1,6 +1,6 @@
-(defproject me.vadyalex/yads "1.0.0-SNAPSHOT"
+(defproject org.clojars.vadyalex/yads "1.0.0-SNAPSHOT"
 
-  :description "Dynamic DNS for vadyalex.me domain"
+  :description "Dynamic DNS micro service connected to Yandex DNS API"
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [compojure "1.5.0"]
@@ -24,18 +24,13 @@
          :init    yads.core/service-init
          :destroy yads.core/service-destroy}
 
-  :deploy-branches ["master"]
 
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]
-                  ["vcs" "tag" "--no-sign"]                 ; disable signing
+                  ["vcs" "tag" "--no-sign"] ; disable signing
                   ["ring" "uberwar"]
-                  ;;["deploy"]                              ; do not deploy artifact
+                  ;["deploy"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
-                  ["vcs" "push"]]
-
-  :deploy-repositories [["snapshots" {:url           ~(str "file://" (System/getProperty "user.home") "/.m2/repository")}]
-                        ["releases"  {:url           ~(str "file://" (System/getProperty "user.home") "/.m2/repository")
-                                      :sign-releases false}]])
+                  ["vcs" "push"]])
