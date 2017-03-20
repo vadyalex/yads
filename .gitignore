@@ -8,6 +8,7 @@ pom.xml.asc
 /classes/
 /target/
 /checkouts/
+/releases
 
 # Leiningen project files
 .lein-env
