@@ -54,6 +54,12 @@
   {:status  204
    :headers {"Content-Type" "text/plain; charset=utf-8"}})
 
+(def not-found
+  {:status  404
+   :headers {"Content-Type" "text/plain; charset=utf-8"}
+   :body ""})
+
+
 (defn yandex-get-records
   "Get DNS records from Yandex DNS service"
   []
@@ -126,7 +132,8 @@
            (GET "/" []
                 (record-status subdomain))
            (GET "/update" [ip key :as {headers :headers client-ip :remote-addr}]
-                (record-update subdomain ip (or (get headers "x-forwarded-for") client-ip) key))))
+                (record-update subdomain ip (or (get headers "x-forwarded-for") client-ip) key)))
+  (ANY "*" [] not-found))
 
 (def port
   (Integer. (or (env :port) 5000)))
