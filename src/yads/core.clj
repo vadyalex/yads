@@ -122,9 +122,11 @@
             internal-server-error))))))
 
 (defroutes service-routes
-           (context "/record/:subdomain" [subdomain]
-             (GET "/" [] (record-status subdomain))
-             (GET "/update" [ip key :as {client-ip :remote-addr}] (record-update subdomain ip client-ip key))))
+  (context "/record/:subdomain" [subdomain]
+           (GET "/" []
+                (record-status subdomain))
+           (GET "/update" [ip key :as {headers :headers client-ip :remote-addr}]
+                (record-update subdomain ip (or (get headers "x-forwarded-for") client-ip) key))))
 
 (def port
   (Integer. (or (env :port) 5000)))
