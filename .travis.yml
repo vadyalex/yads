@@ -3,5 +3,4 @@ lein: lein2
 jdk:
   - oraclejdk8
 script:
-  - lein test
-  - lein ring uberwar
+  - lein do clean, test, uberjar

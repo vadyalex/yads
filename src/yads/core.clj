@@ -4,11 +4,13 @@
     [clojure.string :as strings]
     [clojure.data.xml :as xml]
     [compojure.core :refer :all]
+    [ring.adapter.jetty :as jetty]
     [ring.util.response :as responses]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [clj-http.client :as client]
     [clojure.data.json :as json]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log])
+  (:gen-class))
 
 (def yandex-domain
   (env :yandex-domain))
@@ -52,6 +54,12 @@
   {:status  204
    :headers {"Content-Type" "text/plain; charset=utf-8"}})
 
+(def not-found
+  {:status  404
+   :headers {"Content-Type" "text/plain; charset=utf-8"}
+   :body ""})
+
+
 (defn yandex-get-records
   "Get DNS records from Yandex DNS service"
   []
@@ -90,24 +98,6 @@
 
 (defonce records (atom {}))
 
-(defn service-init
-  "Initializing.."
-  []
-  (log/info "Initializing..")
-  (log/info "YANDEX_DOMAIN" yandex-domain)
-  (log/info "YANDEX_TOKEN" yandex-token)
-  (log/info "Get records from Yandex..")
-  (swap! records merge (yandex-get-records))
-  (log/info "RECORDS" "->" @records)
-  (log/info "YADS_API_KEY" yads-api-key)
-  (log/info "Done."))
-
-(defn service-destroy
-  "Clean up resources.."
-  []
-  (log/info "Clean up resources..")
-  (log/info "Done."))
-
 (defn record-status
   "Return status of the subdomain record"
   [subdomain]
@@ -138,9 +128,30 @@
             internal-server-error))))))
 
 (defroutes service-routes
-           (context "/record/:subdomain" [subdomain]
-             (GET "/" [] (record-status subdomain))
-             (GET "/update" [ip key :as {client-ip :remote-addr}] (record-update subdomain ip client-ip key))))
+  (context "/record/:subdomain" [subdomain]
+           (GET "/" []
+                (record-status subdomain))
+           (GET "/update" [ip key :as {headers :headers client-ip :remote-addr}]
+                (record-update subdomain ip (or (get headers "x-forwarded-for") client-ip) key)))
+  (ANY "*" [] not-found))
 
-(def service
-  (wrap-defaults service-routes api-defaults))
+(def port
+  (Integer. (or (env :port) 5000)))
+
+(defn service-init
+  "Initializing.."
+  []
+  (log/info "Initializing YADS..")
+  (log/info "YANDEX_DOMAIN" yandex-domain)
+  (log/info "YANDEX_TOKEN" yandex-token)
+  (if (and yandex-domain yandex-token)
+    (do
+      (log/info "Get records from Yandex..")
+      (swap! records merge (yandex-get-records))))
+  (log/info "RECORDS" "->" @records)
+  (log/info "YADS_API_KEY" yads-api-key)
+  (log/info "Starting YADS on port" port))
+
+(defn -main [& args]
+  (service-init)
+  (jetty/run-jetty (wrap-defaults service-routes api-defaults) {:port port :join? false}))
