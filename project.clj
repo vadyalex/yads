@@ -1,4 +1,4 @@
-(defproject vadyalex/yads "1.0.1-SNAPSHOT"
+(defproject vadyalex/yads "1.0.1"
 
   :description "Dynamic DNS micro service connected to Yandex DNS API"
 
@@ -21,11 +21,11 @@
              :dev {:dependencies [[alembic "0.3.2"]]}
              :production {:env {:production true}}}
 
-  repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]}
+  :repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]}
 
   :plugins [[lein-environ "1.1.0"]]
 
-  release-tasks [["vcs" "assert-committed"]
+  :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]
                   ["vcs" "tag" "--no-sign"] ; disable signing
