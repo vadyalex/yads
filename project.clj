@@ -21,7 +21,8 @@
              :dev {:dependencies [[alembic "0.3.2"]]}
              :production {:env {:production true}}}
 
-  :repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]}
+  :repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]
+                 :port 7000}
 
   :plugins [[lein-environ "1.1.0"]]
 
