@@ -1,6 +1,6 @@
 (ns yads.core
   (:require
-    [ring.adapter.jetty :as jetty]
+    [org.httpkit.server :as server]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [clojure.tools.logging :as log]
     [yads.config :as cfg]
@@ -12,7 +12,6 @@
 (defn -main [& args]
   (handler/app-init)
   (log/info "Starting YADS on port" cfg/port)
-  (jetty/run-jetty
+  (server/run-server
     (wrap-defaults routes/app-routes api-defaults)
-    {:port cfg/port
-     :join? false}))
+    {:port cfg/port}))

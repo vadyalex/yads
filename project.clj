@@ -10,7 +10,7 @@
                  [compojure "1.5.0"]
                  [ring-server "0.4.0"]
                  [ring/ring-defaults "0.2.0"]
-                 [ring/ring-jetty-adapter "1.5.1"]
+                 [http-kit "2.2.0"]
                  [clj-http "3.1.0"]
                  [environ "1.1.0"]
                  [ch.qos.logback/logback-classic "1.1.7"]
