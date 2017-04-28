@@ -3,13 +3,13 @@
     [environ.core :refer [env]]
     [clojure.string :as strings]
     [clojure.data.xml :as xml]
-    [compojure.core :refer :all]
-    [ring.adapter.jetty :as jetty]
-    [ring.util.response :as responses]
-    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
-    [clj-http.client :as client]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
+    [clojure.core.async :refer [>! <! >!! <!! go chan buffer close! thread alts! alts!! timeout]]
+    [compojure.core :refer :all]
+    [ring.adapter.jetty :as jetty]
+    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+    [clj-http.client :as client]
     [yads.config :as cfg]
     [yads.yandex :as yndx]))
 
@@ -29,6 +29,10 @@
 
 (def ok
   {:status  200
+   :headers {"Content-Type" "text/plain; charset=utf-8"}})
+
+(def accepted
+  {:status  202
    :headers {"Content-Type" "text/plain; charset=utf-8"}})
 
 (defn json-response
@@ -60,10 +64,10 @@
   (log/info "YANDEX_DOMAIN" cfg/yandex-domain)
   (log/info "YANDEX_TOKEN" cfg/yandex-token)
   (if (and cfg/yandex-domain cfg/yandex-token)
-    (do
+    (go
       (log/info "Get records from Yandex..")
-      (swap! records merge (yndx/yandex-get-records))))
-  (log/info "RECORDS" "->" @records)
+      (swap! records merge (yndx/yandex-get-records))
+      (log/info "RECORDS" "->" @records)))
   (log/info "YADS_API_KEY" cfg/yads-api-key))
 
 
@@ -90,8 +94,8 @@
          same-ip? (.equalsIgnoreCase current-ip new-ip)]
         (if same-ip?
           not-modified
-          (if (yndx/yandex-update-record subdomain ysubdomainid new-ip)
-            (do
-              (swap! records assoc-in [subdomain :ip] new-ip)
-              ok)
-            internal-server-error))))))
+          (do
+            (go
+              (if (yndx/yandex-update-record subdomain ysubdomainid new-ip)
+                (swap! records assoc-in [subdomain :ip] new-ip)))
+            accepted))))))

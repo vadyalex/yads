@@ -6,6 +6,7 @@
                  [org.clojure/data.xml "0.0.8"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
+                 [org.clojure/core.async "0.3.442"]
                  [compojure "1.5.0"]
                  [ring-server "0.4.0"]
                  [ring/ring-defaults "0.2.0"]
