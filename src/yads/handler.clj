@@ -10,6 +10,7 @@
     [ring.adapter.jetty :as jetty]
     [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
     [clj-http.client :as client]
+    [overtone.at-at :as at-at]
     [yads.config :as cfg]
     [yads.yandex :as yndx]))
 
@@ -57,19 +58,17 @@
 
 (defonce records (atom {}))
 
+(defonce tasks (at-at/mk-pool))
+
+
 (defn app-init
   "Initializing.."
   []
   (log/info "Initializing YADS..")
   (log/info "YANDEX_DOMAIN" cfg/yandex-domain)
   (log/info "YANDEX_TOKEN" cfg/yandex-token)
-  (if (and cfg/yandex-domain cfg/yandex-token)
-    (go
-      (log/info "Get records from Yandex..")
-      (swap! records merge (yndx/yandex-get-records))
-      (log/info "RECORDS" "->" @records)))
-  (log/info "YADS_API_KEY" cfg/yads-api-key))
-
+  (log/info "Schedule periodicaly get records from Yandex..")
+  (at-at/interspaced cfg/updates-period #(swap! records merge (yndx/yandex-get-records)) tasks))
 
 (defn record-status
   "Return status of the subdomain record"

@@ -13,7 +13,8 @@
                  [ring/ring-jetty-adapter "1.5.1"]
                  [clj-http "3.1.0"]
                  [environ "1.1.0"]
-                 [ch.qos.logback/logback-classic "1.1.7"]]
+                 [ch.qos.logback/logback-classic "1.1.7"]
+                 [overtone/at-at "1.2.0"]]
 
   :uberjar-name "yads.jar"
   :main yads.core

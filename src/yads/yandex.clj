@@ -12,29 +12,31 @@
     [clojure.tools.logging :as log]
     [yads.config :as cfg]))
 
+
 (defn yandex-get-records
   "Get DNS records from Yandex DNS service"
   []
-  (let
-  [response-xml (-> "https://pddimp.yandex.ru/nsapi/get_domain_records.xml?token=%s&domain=%s"
-                    (format cfg/yandex-token cfg/yandex-domain)
-                    (client/get)
-                    :body
-                    xml/parse-str)]
-    (->> response-xml
-         xml-seq
-         (filter #(= :record (:tag %)))
-         (filter #(.equalsIgnoreCase "A" (get-in % [:attrs :type])))
-         (map #(let [record-tag  %
-                     domain  (get-in record-tag [:attrs :domain])
-                     id      (get-in record-tag [:attrs :id])
-                     content (get-in record-tag [:content] "0.0.0.0")
-                     ip      (-> (apply str content)
-                                 (.replaceAll "\\)" "")
-                                 (.replaceAll "\\(" ""))]
-                 {domain {:ysubdomainid id
-                          :ip ip}}))
-         (into {}))))
+  (if (and cfg/yandex-domain cfg/yandex-token)
+    (let [response-xml (-> "https://pddimp.yandex.ru/nsapi/get_domain_records.xml?token=%s&domain=%s"
+                           (format cfg/yandex-token cfg/yandex-domain)
+                           (client/get)
+                           :body
+                           xml/parse-str)]
+      (->> response-xml
+           xml-seq
+           (filter #(= :record (:tag %)))
+           (filter #(.equalsIgnoreCase "A" (get-in % [:attrs :type])))
+           (map #(let [record-tag  %
+                       domain  (get-in record-tag [:attrs :domain])
+                       id      (get-in record-tag [:attrs :id])
+                       content (get-in record-tag [:content] "0.0.0.0")
+                       ip      (-> (apply str content)
+                                   (.replaceAll "\\)" "")
+                                   (.replaceAll "\\(" ""))]
+                   {domain {:ysubdomainid id
+                            :ip ip}}))
+           (into {})))
+    {}))
 
 
 (defn yandex-update-record
