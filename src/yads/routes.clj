@@ -5,6 +5,11 @@
 
 
 (defroutes app-routes
+
+  (GET "/records"
+       []
+       (handler/records-status))
+
   (context "/record/:domain" [domain]
            (GET "/"
                 []

@@ -13,3 +13,11 @@
 
 (def port
   (Integer. (or (env :port) 5000)))
+
+;; 900 000 milliseconds = 15 minutes
+(def updates-period 900000)
+
+(def is-production?
+  (-> :production
+      (env)
+      (true?)))

@@ -3,21 +3,22 @@
     [environ.core :refer [env]]
     [clojure.string :as strings]
     [clojure.data.xml :as xml]
-    [compojure.core :refer :all]
-    [ring.adapter.jetty :as jetty]
-    [ring.util.response :as responses]
-    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
-    [clj-http.client :as client]
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
+    [clojure.core.async :refer [>! <! >!! <!! go chan buffer close! thread alts! alts!! timeout]]
+    [clojure.java.io :as io]
+    [compojure.core :refer :all]
+    [ring.adapter.jetty :as jetty]
+    [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+    [clj-http.client :as client]
+    [overtone.at-at :as at-at]
     [yads.config :as cfg]
     [yads.yandex :as yndx]))
 
 (defn bad-request
   "Return 400 response with optional body"
   ([]
-   {:status  400
-    :headers {"Content-Type" "text/plain; charset=utf-8"}})
+   bad-request "")
   ([body]
    {:status  400
     :body    body
@@ -29,6 +30,10 @@
 
 (def ok
   {:status  200
+   :headers {"Content-Type" "text/plain; charset=utf-8"}})
+
+(def accepted
+  {:status  202
    :headers {"Content-Type" "text/plain; charset=utf-8"}})
 
 (defn json-response
@@ -46,12 +51,23 @@
   {:status  204
    :headers {"Content-Type" "text/plain; charset=utf-8"}})
 
+(def nothing-to-do-here
+  (-> "nothing-to-do-here.txt"
+      (io/resource)
+      (slurp)))
+
 (def not-found
   {:status  404
    :headers {"Content-Type" "text/plain; charset=utf-8"}
-   :body ""})
+   :body nothing-to-do-here})
 
+
+;; records map
 (defonce records (atom {}))
+
+;; thread pool to execute periodic records fetch
+(defonce tasks (at-at/mk-pool))
+
 
 (defn app-init
   "Initializing.."
@@ -59,13 +75,8 @@
   (log/info "Initializing YADS..")
   (log/info "YANDEX_DOMAIN" cfg/yandex-domain)
   (log/info "YANDEX_TOKEN" cfg/yandex-token)
-  (if (and cfg/yandex-domain cfg/yandex-token)
-    (do
-      (log/info "Get records from Yandex..")
-      (swap! records merge (yndx/yandex-get-records))))
-  (log/info "RECORDS" "->" @records)
-  (log/info "YADS_API_KEY" cfg/yads-api-key))
-
+  (log/info "Schedule periodicaly get records from Yandex..")
+  (at-at/interspaced cfg/updates-period #(swap! records merge (yndx/yandex-get-records)) tasks))
 
 (defn record-status
   "Return status of the subdomain record"
@@ -90,8 +101,21 @@
          same-ip? (.equalsIgnoreCase current-ip new-ip)]
         (if same-ip?
           not-modified
-          (if (yndx/yandex-update-record subdomain ysubdomainid new-ip)
-            (do
-              (swap! records assoc-in [subdomain :ip] new-ip)
-              ok)
-            internal-server-error))))))
+          (do
+            (go
+              (if (yndx/yandex-update-record subdomain ysubdomainid new-ip)
+                (swap! records assoc-in [subdomain :ip] new-ip)))
+            accepted))))))
+
+(defn records-status
+  "Return status of all subdomain records"
+  []
+  (let
+    [result (->> @records
+                 (seq)
+                 (map #(hash-map :domain (first %) :ip (:ip (second %))))
+                 (sort #(compare (:domain %1) (:domain %2)))
+                 (reduce conj []))]
+    (if (empty? result)
+      no-content
+      (json-response (json/write-str result)))))
