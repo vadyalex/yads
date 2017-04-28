@@ -1,4 +1,4 @@
-(defproject vadyalex/yads "2.1.1-SNAPSHOT"
+(defproject vadyalex/yads "2.1.1"
 
   :description "Dynamic DNS micro service connected to Yandex DNS API"
 
